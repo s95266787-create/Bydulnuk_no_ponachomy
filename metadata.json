@@ -1,0 +1,6 @@
+{
+  "name": "Звуковий Будильник",
+  "description": "Звуковий будильник із можливістю запису голосу та вибору звуку за днями тижня",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
