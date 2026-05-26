@@ -250,8 +250,8 @@ fun MainVoiceAlarmApp() {
                 viewModel.clearRecording()
                 stopLocalPreview()
             },
-            onSave = { hour, minute, soundType, builtInSound, customPath, repeatDays, label ->
-                viewModel.addAlarm(hour, minute, soundType, builtInSound, customPath, repeatDays, label)
+            onSave = { hour, minute, soundType, builtInSound, customPath, repeatDays, label, volume ->
+                viewModel.addAlarm(hour, minute, soundType, builtInSound, customPath, repeatDays, label, volume)
                 showAddDialog = false
                 viewModel.clearRecording()
             },
@@ -440,17 +440,50 @@ fun AlarmCard(
                             }
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .background(CometPrimary.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = soundLabel,
-                                color = CometSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .background(CometPrimary.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = soundLabel,
+                                    color = CometSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .background(CometAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = when {
+                                            alarm.volume <= 0.05f -> Icons.Default.VolumeMute
+                                            alarm.volume < 0.6f -> Icons.Default.VolumeDown
+                                            else -> Icons.Default.VolumeUp
+                                        },
+                                        contentDescription = null,
+                                        tint = CometAccent,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = "${(alarm.volume * 100).toInt()}%",
+                                        color = CometAccent,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -554,7 +587,7 @@ fun AddAlarmDialog(
     micPermissionGranted: Boolean,
     onRequestMicPermission: () -> Unit,
     onDismiss: () -> Unit,
-    onSave: (hour: Int, minute: Int, soundType: Int, builtInSound: String, customPath: String?, repeatDays: Set<Int>, label: String) -> Unit,
+    onSave: (hour: Int, minute: Int, soundType: Int, builtInSound: String, customPath: String?, repeatDays: Set<Int>, label: String, volume: Float) -> Unit,
     viewModel: AlarmViewModel,
     previewPlayingPath: String?,
     onPlayPreview: (String) -> Unit,
@@ -564,6 +597,7 @@ fun AddAlarmDialog(
     var hour by remember { mutableStateOf(12) }
     var minute by remember { mutableStateOf(0) }
     var label by remember { mutableStateOf("") }
+    var volume by remember { mutableStateOf(1.0f) }
 
     // Sound customization
     var selectedSoundType by remember { mutableStateOf(0) } // 0=BuiltIn, 1=VoiceRec, 2=Picked
@@ -1036,6 +1070,65 @@ fun AddAlarmDialog(
                         }
                     }
 
+                    // 3.5. Volume adjustment
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(CosmicNightSurface, RoundedCornerShape(16.dp))
+                                .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = when {
+                                            volume <= 0.05f -> Icons.Default.VolumeMute
+                                            volume < 0.6f -> Icons.Default.VolumeDown
+                                            else -> Icons.Default.VolumeUp
+                                        },
+                                        contentDescription = "Гучність",
+                                        tint = CometSecondary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Гучність будильника",
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                                Text(
+                                    text = "${(volume * 100).toInt()}%",
+                                    color = CometAccent,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Slider(
+                                value = volume,
+                                onValueChange = { volume = it },
+                                valueRange = 0f..1f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = CometAccent,
+                                    activeTrackColor = CometPrimary,
+                                    inactiveTrackColor = BorderColor
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("alarm_volume_slider")
+                            )
+                        }
+                    }
+
                     // 4. Alarm Label memo box
                     item {
                         Column(
@@ -1100,7 +1193,7 @@ fun AddAlarmDialog(
                                 Toast.makeText(context, "Оберіть зовнішній файл", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            onSave(hour, minute, selectedSoundType, selectedBuiltInSound, finalCustomPath, selectedDays, label)
+                            onSave(hour, minute, selectedSoundType, selectedBuiltInSound, finalCustomPath, selectedDays, label, volume)
                         },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier

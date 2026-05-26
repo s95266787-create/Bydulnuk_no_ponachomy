@@ -13,7 +13,8 @@ data class Alarm(
     val selectedBuiltInSound: String = "bell", // "bell", "digital", "rooster", "melodic"
     val customSoundPath: String? = null, // path to recorded voice file or picked uri string
     val repeatDays: String = "", // Comma-separated: "2,3,4" (Monday=2...Sunday=1 as in Calendar)
-    val label: String = "" // Optional memo/label
+    val label: String = "", // Optional memo/label
+    val volume: Float = 1.0f // Alarm custom volume level from 0.0f to 1.0f
 ) {
     // Check if alarm repeats on a particular day (Calendar constants Monday=2..Sunday=1)
     fun repeatsOn(day: Int): Boolean {

@@ -53,7 +53,8 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
         builtInSoundName: String,
         customPath: String?,
         repeatDays: Set<Int>,
-        label: String
+        label: String,
+        volume: Float = 1.0f
     ) {
         viewModelScope.launch {
             val repeatString = repeatDays.sorted().joinToString(",")
@@ -65,7 +66,8 @@ class AlarmViewModel(application: Application) : AndroidViewModel(application) {
                 selectedBuiltInSound = builtInSoundName,
                 customSoundPath = customPath,
                 repeatDays = repeatString,
-                label = label
+                label = label,
+                volume = volume
             )
             repository.insertAlarm(alarm)
         }

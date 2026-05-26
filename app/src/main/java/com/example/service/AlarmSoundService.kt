@@ -87,13 +87,13 @@ class AlarmSoundService : Service() {
                 val db = AppDatabase.getDatabase(applicationContext)
                 val alarm = db.alarmDao().getAlarmById(alarmId)
                 if (alarm != null) {
-                    playAlarmSound(alarm.selectedSoundType, alarm.selectedBuiltInSound, alarm.customSoundPath)
+                    playAlarmSound(alarm.selectedSoundType, alarm.selectedBuiltInSound, alarm.customSoundPath, alarm.volume)
                 } else {
-                    playDefaultSound()
+                    playDefaultSound(1.0f)
                 }
             }
         } else {
-            playDefaultSound()
+            playDefaultSound(1.0f)
         }
 
         return START_STICKY
@@ -172,7 +172,7 @@ class AlarmSoundService : Service() {
         startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun playAlarmSound(soundType: Int, builtInSound: String, customPath: String?) {
+    private fun playAlarmSound(soundType: Int, builtInSound: String, customPath: String?, volume: Float) {
         try {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer()
@@ -184,6 +184,7 @@ class AlarmSoundService : Service() {
 
             mediaPlayer?.setAudioAttributes(attributes)
             mediaPlayer?.isLooping = true
+            mediaPlayer?.setVolume(volume, volume)
 
             when (soundType) {
                 1 -> { // Custom Recorded Voice
@@ -196,10 +197,10 @@ class AlarmSoundService : Service() {
                             Log.d("AlarmSoundService", "Playing recorded voice from: $customPath")
                         } else {
                             Log.e("AlarmSoundService", "Recorded file not found, playing default.")
-                            playDefaultSound()
+                            playDefaultSound(volume)
                         }
                     } else {
-                        playDefaultSound()
+                        playDefaultSound(volume)
                     }
                 }
                 2 -> { // System Ringtone/Picked File
@@ -211,10 +212,10 @@ class AlarmSoundService : Service() {
                             Log.d("AlarmSoundService", "Playing picked system/external sound: $customPath")
                         } catch (e: Exception) {
                             Log.e("AlarmSoundService", "Failed to play picked URI, playing default.", e)
-                            playDefaultSound()
+                            playDefaultSound(volume)
                         }
                     } else {
-                        playDefaultSound()
+                        playDefaultSound(volume)
                     }
                 }
                 else -> { // Built-in (0)
@@ -224,13 +225,13 @@ class AlarmSoundService : Service() {
                         mediaPlayer?.prepare()
                         mediaPlayer?.start()
                     } else {
-                        playDefaultSound()
+                        playDefaultSound(volume)
                     }
                 }
             }
         } catch (e: Exception) {
             Log.e("AlarmSoundService", "Error in playAlarmSound", e)
-            playDefaultSound()
+            playDefaultSound(volume)
         }
     }
 
@@ -243,7 +244,7 @@ class AlarmSoundService : Service() {
         }
     }
 
-    private fun playDefaultSound() {
+    private fun playDefaultSound(volume: Float) {
         try {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer()
@@ -260,6 +261,7 @@ class AlarmSoundService : Service() {
             )
             mediaPlayer?.setDataSource(this, alarmUri)
             mediaPlayer?.isLooping = true
+            mediaPlayer?.setVolume(volume, volume)
             mediaPlayer?.prepare()
             mediaPlayer?.start()
         } catch (e: Exception) {
